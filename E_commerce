@@ -1,0 +1,90 @@
+CREATE TABLE products (
+    product_id SERIAL PRIMARY KEY,
+    name VARCHAR(255),
+    price DECIMAL(10, 2),
+    description TEXT
+);
+
+CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE,
+    email VARCHAR(100) UNIQUE,
+    password VARCHAR(255)
+);
+
+CREATE TABLE carts (
+    cart_id SERIAL PRIMARY KEY,
+    user_id INT
+);
+
+CREATE TABLE cart_items (
+    item_id SERIAL PRIMARY KEY,
+    cart_id INT,
+    product_id INT,
+    quantity INT
+);
+
+CREATE TABLE orders (
+    order_id SERIAL PRIMARY KEY,
+    user_id INT,
+    order_date DATE,
+    status VARCHAR(20)
+);
+
+
+
+
+import psycopg2
+
+# Database connection parameters
+db_params = {
+    'host': 'your_host',
+    'database': 'your_database',
+    'user': 'your_user',
+    'password': 'your_password'
+}
+
+# Connect to the PostgreSQL database
+try:
+    conn = psycopg2.connect(**db_params)
+    cursor = conn.cursor()
+
+    # CREATE (Insert a new product)
+    cursor.execute("INSERT INTO products (name, price, description) VALUES (%s, %s, %s)",
+                   ('Product 1', 19.99, 'Description for Product 1'))
+    conn.commit()
+
+    # CREATE (Insert a new user)
+    cursor.execute("INSERT INTO users (username, email, password) VALUES (%s, %s, %s)",
+                   ('john_doe', 'john@example.com', 'password123'))
+    conn.commit()
+
+    # CREATE (Create a new cart for a user)
+    cursor.execute("INSERT INTO carts (user_id) VALUES (%s)",
+                   (1,))
+    conn.commit()
+
+    # CREATE (Add items to a cart)
+    cursor.execute("INSERT INTO cart_items (cart_id, product_id, quantity) VALUES (%s, %s, %s)",
+                   (1, 1, 2))
+    conn.commit()
+
+    # CREATE (Place an order)
+    cursor.execute("INSERT INTO orders (user_id, order_date, status) VALUES (%s, %s, %s)",
+                   (1, '2023-10-11', 'Pending'))
+    conn.commit()
+
+    # READ (Retrieve order information)
+    cursor.execute("SELECT o.order_id, u.username, p.name, o.order_date, o.status FROM orders o "
+                   "INNER JOIN users u ON o.user_id = u.user_id "
+                   "INNER JOIN cart_items ci ON o.order_id = ci.cart_id "
+                   "INNER JOIN products p ON ci.product_id = p.product_id")
+    orders = cursor.fetchall()
+    for order in orders:
+        print(f"Order ID: {order[0]}, User: {order[1]}, Product: {order[2]}, Date: {order[3]}, Status: {order[4]}")
+
+except psycopg2.Error as error:
+    print("Error: ", error)
+finally:
+    cursor.close()
+    conn.close()
